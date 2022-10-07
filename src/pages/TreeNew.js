@@ -36,7 +36,7 @@ const getExpandedDeepIndexes = ({ data, deepIndex, path, index }) => {
   );
 };
 
-const expandTreeBranhes = ({ data, paths }) => {
+export const expandTreeBranhes = ({ data, paths }) => {
   // const paths = ['/VC/atlmfc', '/SDK'];
   if (paths.length > 0) {
     let result = [];
@@ -46,6 +46,18 @@ const expandTreeBranhes = ({ data, paths }) => {
       path.shift();
       result.push(getExpandedDeepIndexes({ data, index: 0, path }));
     });
+
+    // const demo = _.reduce(
+    //   paths,
+    //   (memo, arr) => {
+    //     let path = arr.split("/");
+    //     path.shift();
+    //     memo.push(getExpandedDeepIndexes({ data, index: 0, path }));
+
+    //     return memo;
+    //   },
+    //   []
+    // );
 
     return _.flatten(result);
   }
@@ -113,7 +125,7 @@ const Tree = () => {
     <>
       <input
         type="search"
-        onChange={(event) => searchData(event.target.value)}
+        onChange={_.debounce((event) => searchData(event.target.value), 500)}
         style={{ margin: "10px" }}
       />
       <DrawTree data={res} paths={paths} />

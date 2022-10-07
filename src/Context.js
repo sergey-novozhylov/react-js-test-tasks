@@ -2,6 +2,7 @@ import React, { createContext, useReducer } from "react";
 import { FILE_TYPE, FOLDER_TYPE } from "./const";
 import res from "./db";
 import _ from "underscore";
+import { expandTreeBranhes } from "./pages/TreeNew";
 
 export const TreeContext = createContext();
 
@@ -21,33 +22,36 @@ const getInitialState = (data = []) => ({
 const filteredFunc = ({ data, search, path = "/" }) => {
   return _.reduce(
     data,
-    (memo, item) => {
+    ({ memo, paths }, item) => {
       const { name, children, type } = item;
-
-      var childExist;
 
       if (type === FILE_TYPE && name.includes(search)) {
         path = path + name;
-
-        // memo.unshift(path);
-        return memo.concat(item);
+        return { memo: memo.concat(item), paths: paths.concat(path) };
       }
 
       if (!_.isEmpty(children)) {
-        childExist = filteredFunc({
+        const childExist = filteredFunc({
           data: children,
           search,
           path: path + name + "/",
         });
+
+        if (childExist && childExist.memo.length) {
+          return {
+            memo: memo.concat({
+              name,
+              children: childExist.memo,
+              type: FOLDER_TYPE,
+            }),
+            paths: paths.concat(childExist.paths),
+          };
+        }
       }
 
-      if (childExist && childExist.length) {
-        return memo.concat({ name, children: childExist, type: FOLDER_TYPE });
-      }
-
-      return memo;
+      return { memo, paths };
     },
-    []
+    { memo: [], paths: [] }
   );
 };
 
@@ -57,8 +61,14 @@ const reducer = (state, action) => {
 
   switch (type) {
     case actions.SEARCH_DATA:
-      const filtered = filteredFunc({ data, search: payload });
-      return { ...state, search: payload, filtered };
+      const { memo, paths } = filteredFunc({ data, search: payload });
+
+      return {
+        ...state,
+        search: payload,
+        filtered: memo,
+        expanded: expandTreeBranhes({ data: memo, paths }),
+      };
     case actions.DEFAULT_EXPANDED:
       return { ...state, expanded: payload };
     case actions.TOGGLE_DIR:
